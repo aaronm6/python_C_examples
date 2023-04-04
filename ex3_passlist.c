@@ -49,7 +49,7 @@ static PyObject *createtuple(PyObject *self, PyObject *Py_UNUSED(b)) {
 	PyTuple_SetItem(t, 0, PyLong_FromLong(1L));
 	PyTuple_SetItem(t, 1, PyLong_FromLong(2L));
 	PyTuple_SetItem(t, 2, c);
-	//Py_DECREF(c); <---- DO NOT DECREF
+	//Py_DECREF(c); <---- DO NOT DECREF FOR TUPLE (for some reason)
 	return t;
 }
 
