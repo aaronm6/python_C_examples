@@ -16,7 +16,7 @@ static PyObject *meth_accept_array(PyObject *self, PyObject *args) {
 
 static PyObject *meth_print_dtypes(PyObject *self, PyObject *Py_UNUSED(b)) {
 	printf("Numpy dtype integer codes:\n");
-	printf("--------------------------\n");
+	printf("            --\n");
 	printf("NPY_BOOL is %i\n", NPY_BOOL);
 	printf("NPY_INT8 is %i\n", NPY_INT8);
 	printf("NPY_INT32 is %i\n", NPY_INT32);
@@ -100,6 +100,11 @@ static PyObject *meth_add_scalar_to_array(PyObject *self, PyObject *args) {
 	if (!PyArg_ParseTuple(args, "O&d",PyArray_Converter,&nd_x,&n)){
 		return NULL;
 	}
+	int x_tp = PyArray_TYPE(nd_x);
+	if (x_tp != NPY_DOUBLE) {
+		PyErr_SetString(PyExc_TypeError, "dtype of input array 'x' must be double/float64");
+		return NULL;
+	}
 	PyObject *nd_out = PyArray_NewLikeArray(nd_x, NPY_ANYORDER, NULL, 1);
 	npy_intp numEl = PyArray_SIZE(nd_x);
 	double *x = (double *)PyArray_DATA(nd_x);
@@ -115,6 +120,11 @@ static PyObject *meth_multiply_array_by_scalar(PyObject *self, PyObject *args) {
 	double n;
 	PyArrayObject *nd_x;
 	if (!PyArg_ParseTuple(args, "O&d",PyArray_Converter,&nd_x,&n)){
+		return NULL;
+	}
+	int x_tp = PyArray_TYPE(nd_x);
+	if (x_tp != NPY_DOUBLE) {
+		PyErr_SetString(PyExc_TypeError, "dtype of input array 'x' must be double/float64");
 		return NULL;
 	}
 	PyObject *nd_out = PyArray_NewLikeArray(nd_x, NPY_ANYORDER, NULL, 1);
@@ -133,13 +143,29 @@ static PyObject *meth_add_two_arrays(PyObject *self, PyObject *args) {
 	if (!PyArg_ParseTuple(args, "O&O&",PyArray_Converter,&nd_x,PyArray_Converter,&nd_y)){
 		return NULL;
 	}
+	int x_tp = PyArray_TYPE(nd_x);
+	int y_tp = PyArray_TYPE(nd_y);
+	if (x_tp != NPY_DOUBLE) {
+		PyErr_SetString(PyExc_TypeError, "dtype of input array 'x' must be double/float64");
+		return NULL;
+	}
+	if (y_tp != NPY_DOUBLE) {
+		PyErr_SetString(PyExc_TypeError, "dtype of input array 'y' must be double/float64");
+		return NULL;
+	}
+	npy_intp x_size = PyArray_SIZE(nd_x);
+	npy_intp y_size = PyArray_SIZE(nd_y);
+	if (x_size != y_size) {
+		PyErr_SetString(PyExc_IndexError, "Arrays 'x' and 'y' must have the same number of elements");
+		return NULL;
+	}
 	PyObject *nd_out = PyArray_NewLikeArray(nd_x, NPY_ANYORDER, NULL, 1);
 	npy_intp numEl = PyArray_SIZE(nd_x);
 	double *x = (double *)PyArray_DATA(nd_x);
 	double *y = (double *)PyArray_DATA(nd_y);
 	double *out = (double *)PyArray_DATA(nd_out);
 	for (npy_intp i=0; i<numEl; i++) {
-		out[i] = x[i] * y[i];
+		out[i] = x[i] + y[i];
 	}
 	Py_DECREF(nd_x);
 	Py_DECREF(nd_y);
@@ -160,10 +186,10 @@ static PyObject *meth_input_list_of_arrays(PyObject *self, PyObject *args) {
 	npy_intp arraySize;
 	for (int i=0; i<numEl; i++) {
 		el_ptr = PyList_GetItem(listobj, i);
-		//el = (double *)PyArray_DATA(el_ptr);
 		arraySize = PyArray_SIZE(el_ptr);
 		printf("Item %i has %li elements\n", i, arraySize);
 	}
+	//DO NOT DO THIS: Py_DECREF(listobj);
 	Py_RETURN_NONE;
 }
 
