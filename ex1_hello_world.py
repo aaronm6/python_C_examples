@@ -3,6 +3,16 @@ import sys as _sys
 fname_base = 'ex1_hello_world'
 so_name = f'{fname_base}.so'
 
+'''
+This method assumes that the C code has been compiled separately into a .so file.  If the 
+required .so file is not found, it will spit out some instructions on how to compile it 
+manually.  The generally preferred way is for distutils methods to handle the compilation
+and dependencies, but that's not really the point of these examples.
+
+For examples which do a proper, full build using setup.py, see:
+https://gist.github.com/physacco/2e1b52415f3a964ad2a542a99bebed8f
+'''
+
 if so_name not in _os.listdir():
     print(f"\n{so_name} does not exist, and must be compiled.  Make sure the following")
     print("paths are added to the C_INCLUDE_PATH environment variable: \n")

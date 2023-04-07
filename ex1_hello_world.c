@@ -1,11 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-/*
-For examples which do a proper, full build using setup.py, see:
-https://gist.github.com/physacco/2e1b52415f3a964ad2a542a99bebed8f
-*/
-
 static PyObject *meth_helloworld(PyObject *self, PyObject *Py_UNUSED(b)) {
 	printf("Hello World!\n");
 	Py_RETURN_NONE;
