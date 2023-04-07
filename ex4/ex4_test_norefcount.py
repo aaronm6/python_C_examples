@@ -1,6 +1,5 @@
 import ex4_ndarrays as ex
 import numpy as np
-import sys
 
 def main():
     """
