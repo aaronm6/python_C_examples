@@ -50,6 +50,33 @@ static PyObject *meth_get_dtype(PyObject *self, PyObject *args) {
 	Py_RETURN_NONE;
 }
 
+static PyObject *meth_describe_array(PyObject *self, PyObject *args) {
+	PyArrayObject *input;
+	if (!PyArg_ParseTuple(args, "O&", PyArray_Converter, &input)) {
+		return NULL;
+	}
+	int ndim = PyArray_NDIM(input);
+	npy_intp *pydims = PyArray_DIMS(input);
+	npy_intp *strds = PyArray_STRIDES(input);
+	printf("    Number of dimensions: %i\n", ndim);
+	printf("    Shape = (");
+	for (npy_intp i=0; i<ndim; i++) {
+		printf("%li", pydims[i]);
+		if ((i+1)<ndim) { printf(", ");}
+	}
+	printf(")\n");
+	printf("    Strides: (");
+	for (npy_intp i=0; i<ndim; i++) {
+		printf("%li", strds[i]);
+		if ((i+1)<ndim) { printf(", ");}
+	}
+	printf(")\n");
+	printf("    Data pointer:   %p\n", PyArray_DATA(input));
+	printf("    Object pointer: %p\n", (void *)input);
+	Py_DECREF(input);
+	Py_RETURN_NONE;
+}
+
 static PyObject *meth_create_float_array(PyObject *self, PyObject *Py_UNUSED(b)) {
 	int ndim = 1;
 	npy_intp dims[1];
@@ -57,10 +84,12 @@ static PyObject *meth_create_float_array(PyObject *self, PyObject *Py_UNUSED(b))
 	int ft = NPY_CORDER;
 	int tp = NPY_DOUBLE;
 	PyObject *outarr = PyArray_EMPTY(ndim, dims, tp, ft);
+	npy_intp *strds_bytes = PyArray_STRIDES(outarr);
 	double *outarr_ptr = (double *)PyArray_DATA(outarr);
-	outarr_ptr[0] = 3.14159;
-	outarr_ptr[1] = 2.71828;
-	outarr_ptr[2] = 1.41421;
+	npy_intp strds_el = strds_bytes[0] / sizeof(outarr_ptr[0]);
+	outarr_ptr[0*strds_el] = 3.14159;
+	outarr_ptr[1*strds_el] = 2.71828;
+	outarr_ptr[2*strds_el] = 1.41421;
 	return outarr;
 }
 
@@ -70,7 +99,9 @@ static PyObject *meth_create_bool_array(PyObject *self, PyObject *Py_UNUSED(b)) 
 	npy_intp dims[1];
 	dims[0] = 3;
 	PyObject *nd_outarr = PyArray_EMPTY(ndim, dims, NPY_BOOL, NPY_CORDER);
+	npy_intp *strds_bytes = PyArray_STRIDES(nd_outarr);
 	npy_bool *outarr = (npy_bool *)PyArray_DATA(nd_outarr);
+	npy_intp strds_el = strds_bytes[0] / sizeof(outarr[0]);
 	outarr[0] = NPY_FALSE;
 	outarr[1] = NPY_TRUE;
 	outarr[2] = NPY_TRUE;
@@ -241,6 +272,10 @@ PyDoc_STRVAR(
 	"Input a numpy array and the function prints the corresponding data type.\n"
 	"No output.");
 PyDoc_STRVAR(
+	describe_array__doc__,
+	"describe_array(arr)\n--\n\n"
+	"Input a numpy array and describe its properties like size and strides.");
+PyDoc_STRVAR(
 	create_float_array__doc__,
 	"create_float_array()\n--\n\n"
 	"No input.  Create a numpy array of dtype C double / python float\n"
@@ -290,6 +325,7 @@ static PyMethodDef ArrayMethods[] = {
 	{"accept_array", meth_accept_array, METH_VARARGS, accept_array__doc__},
 	{"print_dtypes", meth_print_dtypes, METH_NOARGS, print_dtypes__doc__},
 	{"get_dtype", meth_get_dtype, METH_VARARGS, get_dtype__doc__},
+	{"describe_array",meth_describe_array,METH_VARARGS, describe_array__doc__},
 	{"create_float_array",meth_create_float_array,METH_NOARGS,create_float_array__doc__},
 	{"create_bool_array",meth_create_bool_array,METH_NOARGS,create_bool_array__doc__},
 	{"create_square_array",meth_create_square_array,METH_VARARGS,create_square_array__doc__},
