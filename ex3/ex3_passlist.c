@@ -2,18 +2,6 @@
 #include <Python.h>
 
 /*
-This module just includes some tests involving functions that accept python lists
-as input arguments.  There are two functions:
-
-1. Return the sum of the (integer) elements of the input list
-2. Return a copy of a list where each element is the double of each element of the input list
-
-Both functions have two copies: one where the elements are converted to C types before doing
-math on them, the other where math is done directly on the PyObject* items, using things like
-PyNumber_Add and PyNumber_Multiply.
-
-So far, it seems the versions that do math 'directly' on the PyObjects is slower.
-
 This module includes some examples of passing and returning list objects (and
 a tuple).  There are two copies of the following functions:
 	sum: add up all the elements in a list and return the sum
