@@ -117,15 +117,20 @@ static PyObject *meth_create_square_array(PyObject *self, PyObject *args) {
 	npy_intp dims[2];
 	dims[0] = degree;
 	dims[1] = degree;
-	PyObject *outarr = PyArray_EMPTY(ndim, dims, NPY_LONG, NPY_CORDER);
-	long *outarr_ptr = (long *)PyArray_DATA(outarr);
-	for (long i=0L;i<(degree*degree);i++) {
-		outarr_ptr[i] = i;
+	PyObject *nd_outarr = PyArray_ZEROS(ndim, dims, NPY_LONG, NPY_CORDER);
+	npy_intp *sb = PyArray_STRIDES(nd_outarr); // Strides in Bytes
+	long *outarr = (long *)PyArray_DATA(nd_outarr);
+	size_t el_bytes = sizeof(outarr[0]);
+	//for (long i=0L;i<degree;i++){
+	//	outarr[i*sb[0]/el_bytes + i*sb[1]/el_bytes] = i + 1L;
+	//}
+	for (long i=0L;i<degree*degree; i+=sb[0]/el_bytes+sb[1]/el_bytes) {
+		outarr[i] = i + 1L;
 	}
-	return outarr;
+	return nd_outarr;
 }
 
-static PyObject *meth_add_scalar_to_array(PyObject *self, PyObject *args) {
+static PyObject *meth_add_scalar_to_array_wrong(PyObject *self, PyObject *args) {
 	double n;
 	PyArrayObject *nd_x;
 	if (!PyArg_ParseTuple(args, "O&d",PyArray_Converter,&nd_x,&n)){
@@ -146,7 +151,32 @@ static PyObject *meth_add_scalar_to_array(PyObject *self, PyObject *args) {
 	Py_DECREF(nd_x);
 	return nd_out;
 }
-
+/*
+	int ndim = PyArray_NDIM(input);
+	npy_intp *pydims = PyArray_DIMS(input);
+	npy_intp *strds = PyArray_STRIDES(input);
+*/
+static PyObject *meth_add_scalar_to_array_right(PyObject *self, PyObject *args) {
+	double n;
+	PyArrayObject *nd_x;
+	if (!PyArg_ParseTuple(args, "O&d",PyArray_Converter,&nd_x,&n)){
+		return NULL;
+	}
+	int x_tp = PyArray_TYPE(nd_x);
+	if (x_tp != NPY_DOUBLE) {
+		PyErr_SetString(PyExc_TypeError, "dtype of input array 'x' must be double/float64");
+		return NULL;
+	}
+	PyObject *nd_out = PyArray_NewLikeArray(nd_x, NPY_ANYORDER, NULL, 1);
+	npy_intp numEl = PyArray_SIZE(nd_x);
+	double *x = (double *)PyArray_DATA(nd_x);
+	double *out = (double *)PyArray_DATA(nd_out);
+	for (npy_intp i=0; i<numEl; i++) {
+		out[i] = x[i] + n;
+	}
+	Py_DECREF(nd_x);
+	return nd_out;
+}
 static PyObject *meth_multiply_array_by_scalar(PyObject *self, PyObject *args) {
 	double n;
 	PyArrayObject *nd_x;
