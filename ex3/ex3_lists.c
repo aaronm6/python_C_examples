@@ -20,7 +20,7 @@ Additionally, there are two functions which take no inputs but create a (1) list
 */
 
 /* ----------------- <MODULE FUNCTIONS> ----------------- */
-static PyObject *createlist(PyObject *self, PyObject *Py_UNUSED(b)) {
+static PyObject *meth_createlist(PyObject *self, PyObject *Py_UNUSED(b)) {
 	// Create the list: [1, 2, 'three']
 	PyObject *my_list;
 	my_list = PyList_New(3);
@@ -31,7 +31,7 @@ static PyObject *createlist(PyObject *self, PyObject *Py_UNUSED(b)) {
 	return my_list;
 }
 
-static PyObject *createtuple(PyObject *self, PyObject *Py_UNUSED(b)) {
+static PyObject *meth_createtuple(PyObject *self, PyObject *Py_UNUSED(b)) {
 	// Create the tuple: (1, 2, 'three')
 	PyObject *my_tuple;
 	my_tuple = PyTuple_New(3);
@@ -41,58 +41,38 @@ static PyObject *createtuple(PyObject *self, PyObject *Py_UNUSED(b)) {
 	PyTuple_SetItem(my_tuple, 1, PyLong_FromLong(2L));
 	PyTuple_SetItem(my_tuple, 2, c);
 	
-	if (Py_IS_TYPE(a, &PyUnicode_Type)) {
-		printf("Type of var 'a' is PyUnicode\n");
-	} else if (Py_IS_TYPE(a, &PyLong_Type)) {
-		printf("Type of var 'a' is PyLong\n");
-	} else if (Py_IS_TYPE(a, &PyFloat_Type)) {
-		printf("Type of var 'a' is PyFloat\n");
-	} else {
-		printf("Type of var 'a' is neither PyUnicode, PyLong, nor PyFloat\n");
-	}
-	
-	if (Py_IS_TYPE(c, &PyUnicode_Type)) {
-		printf("Type of var 'c' is PyUnicode\n");
-	} else if (Py_IS_TYPE(c, &PyLong_Type)) {
-		printf("Type of var 'c' is PyLong\n");
-	} else if (Py_IS_TYPE(c, &PyFloat_Type)) {
-		printf("Type of var 'c' is PyFloat\n");
-	} else {
-		printf("Type of var 'c' is neither PyUnicode, PyLong, nor PyFloat\n");
-	}
-	
 	return my_tuple;
 }
 
-static PyObject *list_sum(PyObject *self, PyObject *args) {
+static PyObject *meth_list_sum(PyObject *self, PyObject *args) {
 	/*Take a list of python ints and calculate the sum*/
 	int numElements; /* how many lines we passed for parsing */
 	
 	PyObject *listobj; /* the list of numbers */
 	PyObject *elobj; /* pointer to the element in the string */
-	long int n;
-	//Py_ssize_t x = listobj->ob_refcnt;
-	//printf("******** List's ref count right after declaration is: %li\n", x);
-	
-	/* Parse arguments */
+	/* Parse arguments.  The '!' after the 'O' means it should cast
+	   the input PyObject to be of the type given by the preceeding
+	   type (i.e. PyList_Type, which has to be given by reference).
+	*/
 	if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &listobj)) {
 		return NULL;
 	}
 	numElements = PyList_Size(listobj);
 	if (numElements < 0) {
-		return NULL;
+		PyErr_SetString(PyExc_ValueError, "List must not have negative length.");
 	}
-	long int c = 0;  /* c will hold the sum */
+	long c = 0;  /* c will hold the sum */
+	
 	for (int i=0; i<numElements; i++) {
 		elobj = PyList_GetItem(listobj, i);
-		n = PyLong_AsLong(elobj);
-		c += n;
+		// Notice here we are converting the list item to a C object
+		// and then doing the math with C objects (i.e. 'c += ...'
+		c += PyLong_AsLong(elobj);
 	}
-	Py_DECREF(elobj);
 	return PyLong_FromLong(c);
 }
 
-static PyObject *list_sum_nc(PyObject *self, PyObject *args) {
+static PyObject *meth_list_sum_nc(PyObject *self, PyObject *args) {
 	/* Same as list_sum, but don't convert every item to a C object before doing 
 	math.  I.e. do the math on the python objects directly (which might just
 	be doing the conversion itself under the hood, who knows) */
@@ -105,66 +85,70 @@ static PyObject *list_sum_nc(PyObject *self, PyObject *args) {
         return NULL;
     }
 	numElements = PyList_Size(listobj);
-	long int c=0;
+	long c=0;
 	PyObject * py_c = PyLong_FromLong(c);
 	for (int i=0; i<numElements; i++) {
 		elobj = PyList_GetItem(listobj, i);
+		// Notice here we are not converting the list item to a C object.
+		// We do the math on the C objects using an API function.
 		py_c = PyNumber_Add(py_c, elobj);
 	}
 	return py_c;
 }
 
-static PyObject *list_double(PyObject *self, PyObject *args) {
+static PyObject *meth_list_double(PyObject *self, PyObject *args) {
 	/* Take a list of python ints and create a copy where each element
 	is double of its counterpart element */
 	Py_ssize_t list_size;
-	PyObject *listobj;
-	PyObject *newList;
-	PyObject * elobj;
-	PyObject * elobj2;
+	PyObject *in_list, *out_list; // the list objects
+	PyObject *elobj_i, *elobj_o; // the element objects
 	
-	long int n, n2;
-	if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &listobj)) {
+	long n_i, n_o;
+	if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &in_list)) {
 		return NULL;
 	}
-	
-	list_size = PyList_Size(listobj);
-	newList = PyList_New(list_size);
+	// The above line ('PyList_Type') implicitly checks that the given
+	// object is of type list.
+	list_size = PyList_Size(in_list);
+	out_list = PyList_New(list_size);
 	for (int i=0; i<list_size; i++) {
-		elobj = PyList_GetItem(listobj, i);
-		n = PyLong_AsLong(elobj);
-		n2 = 2 * n;
-		elobj2 = PyLong_FromLong(n2);
-		PyList_SetItem(newList, i, elobj2);
+		elobj_i = PyList_GetItem(in_list, i);
+		// Below, we convert the eleobj to a C object do the math
+		// on C objects, convert back to a PyObject and then insert
+		// that into the new list.
+		n_i = PyLong_AsLong(elobj_i);
+		n_o = 2 * n_i;
+		elobj_o = PyLong_FromLong(n_o);
+		PyList_SetItem(out_list, i, elobj_o);
 	}
-	return newList;
+	return out_list;
 }
 
-static PyObject *list_double_nc(PyObject *self, PyObject *args){
+static PyObject *meth_list_double_nc(PyObject *self, PyObject *args){
 	/* 'nc' = 'no convert'.Do the same thing as list_double, but don't convert the 
 	list items to C long ints before doing the math.  Trying to do the math on the 
 	PyObjects themselves... maybe this is faster? */
 	Py_ssize_t list_size;
-	PyObject *listobj;
-	PyObject *newList;
-	PyObject * elobj;
-	PyObject * elobj2;
-	long int long2 = 2;
-	PyObject * pylong2 = PyLong_FromLong(long2);
+	PyObject *in_list, *out_list;
+	PyObject *elobj_i, *elobj_o;
+	PyObject * pylong2 = PyLong_FromLong(2L);
 	
-	long int n, n2;
-	if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &listobj)) {
+	long n_i, n_o;
+	if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &in_list)) {
 		return NULL;
 	}
 	
-	list_size = PyList_Size(listobj);
-	newList = PyList_New(list_size);
+	list_size = PyList_Size(in_list);
+	out_list = PyList_New(list_size);
 	for (int i=0; i<list_size; i++) {
-		elobj = PyList_GetItem(listobj, i);
-		elobj2 = PyNumber_Multiply(pylong2, elobj);
-		PyList_SetItem(newList, i, elobj2);
+		elobj_i = PyList_GetItem(in_list, i);
+		// Below we do not convert the list elements to C objects,
+		// and instead do the math on the PyObjects themselves
+		// using functions from the Python API.
+		elobj_o = PyNumber_Multiply(pylong2, elobj_i);
+		PyList_SetItem(out_list, i, elobj_o);
 	}
-	return newList;
+	return out_list;
 }
 /* ----------------- </MODULE FUNCTIONS> ----------------- */
 
@@ -180,49 +164,49 @@ PyDoc_STRVAR(
 	"Create the following tuple and return it: (1, 2, 'three')");
 
 PyDoc_STRVAR(
-	lsum__doc__,
-	"lsum(x)\n--\n\n"
+	list_sum__doc__,
+	"list_sum(x)\n--\n\n"
 	"Given a list, x, of exclusively python ints (C longs), calculate the sum\n"
 	"of the elements and return as a python int.\n"
 	"Internally, the code converts the elements from python objects to\n"
 	"type C long, performs the sum on the C objects, and converts the sum\n"
 	"to a python int object.");
 PyDoc_STRVAR(
-	lsum_nc__doc__,
-	"lsum_nc(x)\n--\n\n"
+	list_sum_nc__doc__,
+	"list_sum_nc(x)\n--\n\n"
 	"Same as lsum(x), but internally the math is done with the python objects directly.\n"
 	"'_nc' stands for 'no conversion' i.e. conversion to C objects.");
 PyDoc_STRVAR(
-	ldouble__doc__,
-	"ldouble(x)\n--\n\n"
-	"Given a list, x, this returns another list in which each element of the returned\n"
-	"list is double its counterpart element in x.  Elements of the input list must\n"
-	"all be python ints (C longs)");
+	list_x2__doc__,
+	"list_x2(x)\n--\n\n"
+	"Given a list, x, of elements that are python ints this returns another list\n"
+	"in which each element of the returned list is double its counterpart element\n"
+	"in x.  Elements of the input list must all be python ints (C longs)");
 PyDoc_STRVAR(
-	ldouble_nc__doc__,
-	"ldouble_nc(x)\n--\n\n"
+	list_x2_nc__doc__,
+	"list_x2_nc(x)\n--\n\n"
 	"Same as ldouble(x), but internally the math is done with python objects directly.\n"
 	"'_nc' stands for 'no conversion' i.e. conversion to C objects.");
 /* ----------------- </DOC STRINGS> ----------------- */
 
 static PyMethodDef ListMethods[] = {
-    {"create_list", createlist, METH_NOARGS, create_list__doc__},
-    {"create_tuple", createtuple, METH_NOARGS, create_tuple__doc__},
-    {"lsum", list_sum, METH_VARARGS, lsum__doc__},
-    {"lsum_nc", list_sum_nc, METH_VARARGS, lsum_nc__doc__},
-    {"ldouble", list_double, METH_VARARGS, ldouble__doc__},
-    {"ldouble_nc", list_double_nc, METH_VARARGS,ldouble_nc__doc__},
+    {"create_list", meth_createlist, METH_NOARGS, create_list__doc__},
+    {"create_tuple", meth_createtuple, METH_NOARGS, create_tuple__doc__},
+    {"list_sum", meth_list_sum, METH_VARARGS, list_sum__doc__},
+    {"list_sum_nc", meth_list_sum_nc, METH_VARARGS, list_sum_nc__doc__},
+    {"list_x2", meth_list_double, METH_VARARGS, list_x2__doc__},
+    {"list_x2_nc", meth_list_double_nc, METH_VARARGS,list_x2_nc__doc__},
     {NULL, NULL, 0, NULL}
 };
 
 static struct PyModuleDef list_module = {
     PyModuleDef_HEAD_INIT,
-    "ex3_passlist",
-    "Pass a list to a function",
+    "ex3_lists",
+    "Pass and create python lists",
     -1,
     ListMethods
 };
 
-PyMODINIT_FUNC PyInit_ex3_passlist(void) {
+PyMODINIT_FUNC PyInit_ex3_lists(void) {
     return PyModule_Create(&list_module);
 }
