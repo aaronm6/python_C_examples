@@ -85,7 +85,7 @@ static PyObject *method_compare_string(PyObject *self, PyObject *args) {
 	Py_RETURN_NONE;
 }
 
-static PyObject *method_add_floats(PyObject *self, PyObject *args) {
+static PyObject *method_add_two_floats(PyObject *self, PyObject *args) {
 	// Add two numbers that are C doubles (or floats in python)
 	double a, b; // the inputs
 	double c; // the outputs
@@ -103,7 +103,7 @@ static PyMethodDef FunctionMethods[] = {
 	{"accept_1_int_v2",method_accept_1_int_v2, METH_VARARGS, "Accepts a python int and prints. No output."},
 	{"check_type",method_check_type, METH_VARARGS, "Check one input is either float, int, or string"},
 	{"compare_string", method_compare_string, METH_VARARGS, "Check if given string is 'default'."},
-	{"add_floats", method_add_floats, METH_VARARGS, "Add the two things that are [python] floats"},
+	{"add_two_floats", method_add_two_floats, METH_VARARGS, "Add the two numbers that are [python] floats"},
 	{NULL, NULL, 0, NULL}
 };
 
