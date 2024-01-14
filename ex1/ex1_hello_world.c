@@ -5,7 +5,7 @@
 static PyObject *meth_helloworld(PyObject *self, PyObject *Py_UNUSED(b)) {
 	// Print the message with the native C printf
 	printf("Hello World!\n");
-	
+
 	// A function that returns nothing has to actually return None, 
 	// with the following command:
 	Py_RETURN_NONE;
@@ -26,6 +26,8 @@ static PyObject *meth_helloworld_jupyter(PyObject *self, PyObject *Py_UNUSED(b))
 	// Call the print function and pass 'Hello World' to it
 	PyObject *a = PyObject_CallOneArg(pyprint, PyUnicode_FromString("Hello World!"));
 	
+	// Decrement the reference count of 'a' since we are done with it now
+	Py_DECREF(a);
 	Py_RETURN_NONE;
 }
 
