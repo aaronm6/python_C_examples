@@ -30,6 +30,22 @@ char *get_dtype_name(int dtype_enum) {
 
 
 /* ----------------- <MODULE FUNCTIONS> ----------------- */
+static PyObject *meth_describe_args(PyObject *self, PyObject *args) {
+	//printf("args + 0 = %p\n", args);
+	//printf("args + 1 = %p\n", args+1);
+	//printf("args + 2 = %p\n", args+2);
+	// } else if (Py_IS_TYPE(a, &PyTuple_Type)) {
+	if (Py_IS_TYPE(args, &PyTuple_Type)) {
+		printf("args is a PyTuple\n");
+		Py_ssize_t args_size = PyTuple_Size(args);
+		printf("Size of args is: %zd\n", args_size);
+	} else {
+		printf("args IS NOT a PyTuple\n");
+	}
+	
+	Py_RETURN_NONE;
+}
+
 static PyObject *meth_accept_array(PyObject *self, PyObject *args) {
 	PyArrayObject *input;
 	if (!PyArg_ParseTuple(args, "O&", PyArray_Converter, &input)) {
@@ -269,6 +285,155 @@ static PyObject *meth_copy_1d_int8_array_right(PyObject *self, PyObject *args) {
 	Py_DECREF(nd_x);
 	return nd_out;
 }
+
+static PyObject *meth_copy_1d_int8_array_get(PyObject *self, PyObject *args) {
+	// In this case, we access the data by using Numpy's native 'PyArray_GETPTR1',
+	// rather than directly scanning through the data array
+	PyArrayObject *nd_x;
+	if (!PyArg_ParseTuple(args, "O&",PyArray_Converter,&nd_x)){
+		return NULL;
+	}
+	if (PyArray_TYPE(nd_x) != NPY_INT8) {
+		PyErr_SetString(PyExc_TypeError, "dtype of input array must be char/int8");
+		return NULL;
+	}
+	int ndim = PyArray_NDIM(nd_x);
+	if (ndim != 1) {
+		PyErr_SetString(PyExc_TypeError, "Input array must be 1-dimensional");
+		return NULL;
+	}
+	//npy_intp el_size_bytes = PyArray_ITEMSIZE(nd_x);
+
+	PyObject *nd_out = PyArray_NewLikeArray(nd_x, NPY_ANYORDER, NULL, 1);
+	npy_intp numEl = PyArray_SIZE(nd_x);
+	npy_int8 *x_el, *out_el;
+	for (npy_intp i=0; i<numEl; i++) {
+		x_el = (npy_int8 *)PyArray_GETPTR1(nd_x,i);
+		out_el = (npy_int8 *)PyArray_GETPTR1(nd_out,i);
+		out_el[0] = x_el[0];
+	}
+	Py_DECREF(nd_x);
+	return nd_out;
+}
+static PyObject *meth_copy_2d_float_array_wrong(PyObject *self, PyObject *args) {
+	PyArrayObject *nd_x;
+	if (!PyArg_ParseTuple(args, "O&", PyArray_Converter, &nd_x)) {
+		return NULL;
+	}
+	int ndim = PyArray_NDIM(nd_x);
+	if (ndim != 2) {
+		PyErr_SetString(PyExc_TypeError, "Input array must be 2-dimensional");
+	}
+	if (PyArray_TYPE(nd_x) != NPY_FLOAT64) {
+		PyErr_SetString(PyExc_TypeError, "Input array must have a dtype of double/float64");
+	}
+	//npy_intp *dims = PyArray_DIMS;
+	PyObject *nd_y = PyArray_NewLikeArray(nd_x, NPY_ANYORDER, NULL, 1);
+	npy_intp numEl = PyArray_SIZE(nd_x);
+	
+	npy_float64 *x = (npy_float64 *)PyArray_DATA(nd_x);
+	npy_float64 *y = (npy_float64 *)PyArray_DATA(nd_y);
+	for (int i=0; i<numEl; i++) {
+		y[i] = x[i];
+	}
+	Py_DECREF(nd_x);
+	return nd_y;
+}
+static PyObject *meth_copy_2d_float_array_right(PyObject *self, PyObject *args) {
+	PyArrayObject *nd_x;
+	if (!PyArg_ParseTuple(args, "O&", PyArray_Converter, &nd_x)) {
+		return NULL;
+	}
+	int ndim = PyArray_NDIM(nd_x);
+	if (ndim != 2) {
+		PyErr_SetString(PyExc_TypeError, "Input array must be 2-dimensional");
+	}
+	npy_intp *dims = PyArray_DIMS(nd_x);
+	if (PyArray_TYPE(nd_x) != NPY_FLOAT64) {
+		PyErr_SetString(PyExc_TypeError, "Input array must have a dtype of double/float64");
+	}
+	//npy_intp *dims = PyArray_DIMS;
+	PyObject *nd_y = PyArray_NewLikeArray(nd_x, NPY_ANYORDER, NULL, 1);
+	npy_intp numEl = PyArray_SIZE(nd_x);
+	
+	npy_float64 *x = (npy_float64 *)PyArray_DATA(nd_x);
+	npy_float64 *y = (npy_float64 *)PyArray_DATA(nd_y);
+	npy_intp *x_strides_bytes = PyArray_STRIDES(nd_x);
+	npy_intp *y_strides_bytes = PyArray_STRIDES(nd_y);
+	npy_intp itemsize = PyArray_ITEMSIZE(nd_x); // size of an element of x in bytes
+	npy_intp x_str[ndim];
+	npy_intp y_str[ndim];
+	for (int k=0; k<ndim; k++) {
+		x_str[k] = x_strides_bytes[k] / itemsize;
+		y_str[k] = y_strides_bytes[k] / itemsize;
+	}
+	npy_intp i, j, k_x, k_y;
+	for (npy_intp el=0; el<numEl; el++) {
+		i = el % dims[1];
+		j = el / dims[1];
+		k_x = i*x_str[1] + j*x_str[0];
+		k_y = i*y_str[1] + j*y_str[0];
+		y[k_y] = x[k_x];
+	}
+	Py_DECREF(nd_x);
+	return nd_y;
+}
+static PyObject *meth_copy_2d_float_array_get(PyObject *self, PyObject *args) { // loop through els, calc inds
+	PyArrayObject *nd_x;
+	if (!PyArg_ParseTuple(args, "O&", PyArray_Converter, &nd_x)) {
+		return NULL;
+	}
+	int ndim = PyArray_NDIM(nd_x);
+	if (ndim != 2) {
+		PyErr_SetString(PyExc_TypeError, "Input array must be 2-dimensional");
+	}
+	if (PyArray_TYPE(nd_x) != NPY_FLOAT64) {
+		PyErr_SetString(PyExc_TypeError, "Input array must have a dtype of double/float64");
+	}
+	npy_intp *dims = PyArray_DIMS(nd_x);
+	PyObject *nd_y = PyArray_NewLikeArray(nd_x, NPY_ANYORDER, NULL, 1);
+	npy_intp numEl = PyArray_SIZE(nd_x);
+	npy_intp numEl_y = PyArray_SIZE(nd_y);
+	npy_float64 *x_el, *y_el;
+	
+	npy_intp i, j; // column index, row index
+	for (int el=0; el<numEl; el++) {
+		i = el % dims[1];
+		j = el / dims[1];
+		x_el = (npy_float64 *)PyArray_GETPTR2(nd_x, j, i);
+		y_el = (npy_float64 *)PyArray_GETPTR2(nd_y, j, i);
+		*y_el = *x_el;
+	}
+	Py_DECREF(nd_x);
+	return nd_y;
+}
+static PyObject *meth_copy_2d_float_array_get2(PyObject *self, PyObject *args) { // direct loop over inds
+	PyArrayObject *nd_x;
+	if (!PyArg_ParseTuple(args, "O&", PyArray_Converter, &nd_x)) {
+		return NULL;
+	}
+	int ndim = PyArray_NDIM(nd_x);
+	if (ndim != 2) {
+		PyErr_SetString(PyExc_TypeError, "Input array must be 2-dimensional");
+	}
+	if (PyArray_TYPE(nd_x) != NPY_FLOAT64) {
+		PyErr_SetString(PyExc_TypeError, "Input array must have a dtype of double/float64");
+	}
+	npy_intp *dims = PyArray_DIMS(nd_x);
+	PyObject *nd_y = PyArray_NewLikeArray(nd_x, NPY_ANYORDER, NULL, 1);
+	npy_intp numEl = PyArray_SIZE(nd_x);
+	npy_float64 *x_el, *y_el;
+	
+	for (npy_intp j=0; j<dims[0]; j++) {
+		for (npy_intp i=0; i<dims[1]; i++) {
+			x_el = (npy_float64 *)PyArray_GETPTR2(nd_x, j, i);
+			y_el = (npy_float64 *)PyArray_GETPTR2(nd_y, j, i);
+			y_el[0] = x_el[0];
+		}
+	}
+	Py_DECREF(nd_x);
+	return nd_y;
+}
 /*
 shape: (x, y, z), el_strides(a, b, c);
 
@@ -288,6 +453,7 @@ shape: (x, y, z), el_strides(a, b, c);
     ...:     M = ax1*a + ax2*b + ax3*c
     ...:     print(f'{M = }:  {ax1 = }; {ax2 = }; {ax3 = }')
 */
+/*
 static PyObject *meth_copy_nd_double_array(PyObject *self, PyObject *args) {
 	PyArrayObject *nd_x;
 	if (!PyArg_ParseTuple(args, "O&",PyArray_Converter,&nd_x)){
@@ -337,7 +503,7 @@ static PyObject *meth_copy_nd_double_array(PyObject *self, PyObject *args) {
 		}
 	}
 }
-
+*/
 // From the numpy ref manual:
 // The correct way to access the itemsize of an array from the C API is:
 //    PyArray_ITEMSIZE(arr)
@@ -557,6 +723,14 @@ PyDoc_STRVAR(
 	"To create an int8 array, one can use 'astype', for example:\n"
 	">>> a = np.array([1,2,3,4,5]).astype(np.int8)");
 PyDoc_STRVAR(
+	copy_1d_int8_array_get__doc__,
+	"copy_1d_int8_array_get(a)\n--\n\n"
+	"Provide an array of type int8 and return a copy of that\n"
+	"array.  This is also a 'right' way to do it, and uses\n"
+	"Numpy's 'PyArray_GETPTR1' function for accessing the data.\n"
+	"The functionality on the python side should be exactly the\n"
+	"same as for 'copy_1d_int8_array_right'.");
+PyDoc_STRVAR(
 	add_scalar_to_array__doc__,
 	"add_scalar_to_array(x,n)\n--\n\n"
 	"x is a numpy array of dtype numpy.float64 / python float\n"
@@ -587,6 +761,7 @@ PyDoc_STRVAR(
 
 
 static PyMethodDef ArrayMethods[] = {
+	{"describe_args", meth_describe_args, METH_VARARGS, "Describe the args"},
 	{"accept_array", meth_accept_array, METH_VARARGS, accept_array__doc__},
 	{"accept_array_wrong", meth_accept_array_wrong, METH_VARARGS, accept_array_wrong__doc__},
 	{"print_dtypes", meth_print_dtypes, METH_NOARGS, print_dtypes__doc__},
@@ -597,6 +772,11 @@ static PyMethodDef ArrayMethods[] = {
 	{"create_square_array",meth_create_square_array,METH_VARARGS,create_square_array__doc__},
 	{"copy_1d_int8_array_wrong",meth_copy_1d_int8_array_wrong,METH_VARARGS,copy_1d_int8_array_wrong__doc__},
 	{"copy_1d_int8_array_right",meth_copy_1d_int8_array_right,METH_VARARGS,copy_1d_int8_array_right__doc__},
+	{"copy_1d_int8_array_get",meth_copy_1d_int8_array_get,METH_VARARGS,copy_1d_int8_array_get__doc__},
+	{"copy_2d_float_array_wrong",meth_copy_2d_float_array_wrong,METH_VARARGS,"copy 2d wrong"},
+	{"copy_2d_float_array_right",meth_copy_2d_float_array_right,METH_VARARGS,"copy 2d right"},
+	{"copy_2d_float_array_get",meth_copy_2d_float_array_get,METH_VARARGS,"copy 2d get"},
+	{"copy_2d_float_array_get2",meth_copy_2d_float_array_get2,METH_VARARGS,"copy 2d get2"},
 	{"add_scalar_to_array",meth_add_scalar_to_array,METH_VARARGS,add_scalar_to_array__doc__},
 	{"multiply_array_by_scalar",meth_multiply_array_by_scalar,METH_VARARGS,multiply_array_by_scalar__doc__},
 	{"add_two_arrays",meth_add_two_arrays,METH_VARARGS,add_two_arrays__doc__},
