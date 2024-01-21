@@ -6,7 +6,7 @@ The C files in these examples will need to be compiled.  Instead of compiling ea
 In order to compile the C code, the Python header file (`Python.h`) needs to be found by the compiler.  Additionally, if numpy arrays are to be passed, manipulated, and returned, the numpy header files must be findable by the compiler.  First, we need to find where these header files live.  The python script `find_c_libraries.py` will find them for the system it is being run on and print to screen.  For example, on my system, I get the following:
 
 <code>
-$ python3 find_c_libraries.py 
+$ python3 find_c_libraries.py
 
 In order to compile the C functions correctly, add the following
 paths to the environment variable 'C_INCLUDE_PATH':
