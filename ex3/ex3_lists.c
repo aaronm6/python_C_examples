@@ -44,6 +44,18 @@ static PyObject *meth_createtuple(PyObject *self, PyObject *Py_UNUSED(b)) {
 	return my_tuple;
 }
 
+static PyObject *method_describe_args(PyObject *self, PyObject *args) {
+	PyTypeObject *args_type = Py_TYPE(args);
+	PyObject *type_name = PyObject_GetAttrString((PyObject*)a_type, "__name__");
+	printf("'args's type name is: '%s'\n", PyUnicode_AsUTF8(type_name));
+	if (Py_IS_TYPE(args, &PyTuple_Type)) {
+		Py_ssize_t args_size = PyTuple_Size(args);
+		printf("%zd positional arguments were given.\n", args_size);
+	}
+	Py_RETURN_NONE;
+}
+
+
 static PyObject *meth_list_sum(PyObject *self, PyObject *args) {
 	/*Take a list of python ints and calculate the sum*/
 	int numElements; /* how many lines we passed for parsing */
