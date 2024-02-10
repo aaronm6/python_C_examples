@@ -27,7 +27,6 @@ static PyObject *meth_createlist(PyObject *self, PyObject *Py_UNUSED(b)) {
 	PyList_SetItem(my_list, 0, PyLong_FromLong(1L));
 	PyList_SetItem(my_list, 1, PyLong_FromLong(2L));
 	PyList_SetItem(my_list, 2, PyUnicode_FromString("three"));
-	
 	return my_list;
 }
 
@@ -36,8 +35,10 @@ static PyObject *meth_createtuple(PyObject *self, PyObject *Py_UNUSED(b)) {
 	PyObject *my_tuple;
 	my_tuple = PyTuple_New(3);
 	PyObject *a = PyLong_FromLong(1L);
+	printf("a's refcount after instantiation: %li\n", Py_REFCNT(a));
 	PyObject *c = PyUnicode_FromString("three");
 	PyTuple_SetItem(my_tuple, 0, a);
+	printf("a's refcount after list insertion: %li\n", Py_REFCNT(a));
 	PyTuple_SetItem(my_tuple, 1, PyLong_FromLong(2L));
 	PyTuple_SetItem(my_tuple, 2, c);
 	
@@ -46,7 +47,7 @@ static PyObject *meth_createtuple(PyObject *self, PyObject *Py_UNUSED(b)) {
 
 static PyObject *method_describe_args(PyObject *self, PyObject *args) {
 	PyTypeObject *args_type = Py_TYPE(args);
-	PyObject *type_name = PyObject_GetAttrString((PyObject*)a_type, "__name__");
+	PyObject *type_name = PyObject_GetAttrString((PyObject*)args_type, "__name__");
 	printf("'args's type name is: '%s'\n", PyUnicode_AsUTF8(type_name));
 	if (Py_IS_TYPE(args, &PyTuple_Type)) {
 		Py_ssize_t args_size = PyTuple_Size(args);
