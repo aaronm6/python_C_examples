@@ -31,7 +31,9 @@ static struct PyModuleDef hello_module = {
 	HelloMethods
 };
 
-// Initialize the module
+// Initialize the module. The part after 'PyInit_' must be the same
+// as the name of the module ('ex1_hello_world') that you will type.
+// That is 'import ex1_hello_world'
 PyMODINIT_FUNC PyInit_ex1_hello_world(void) {
 	return PyModule_Create(&hello_module);
 }
