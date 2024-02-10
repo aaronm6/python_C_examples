@@ -60,21 +60,16 @@ static PyObject *method_check_type(PyObject *self, PyObject *args) {
 	if (Py_IS_TYPE(a, &PyLong_Type)) {
 		long a_long = PyLong_AsLong(a);
 		printf("Input is %li, of type PyLong\n", a_long);
-		//fflush(stdout);
 	} else if (Py_IS_TYPE(a, &PyFloat_Type)) {
 		double a_double = PyFloat_AsDouble(a);
 		printf("Input is %f, of type PyFloat\n", a_double);
-		//fflush(stdout);
 	} else if (Py_IS_TYPE(a, &PyUnicode_Type)) {
 		const char *a_string = PyUnicode_AsUTF8(a);
 		printf("Input is '%s', of type PyUnicode (i.e. string)\n", a_string);
-		//fflush(stdout);
 	} else if (Py_IS_TYPE(a, &PyTuple_Type)) {
 		printf("Input is of type PyTuple\n");
-		fflush(stdout);
 	} else {
 		printf("Input is of some other type\n");
-		//fflush(stdout);
 	}
 	PyTypeObject *a_type = Py_TYPE(a);
 	PyObject *type_name = PyObject_GetAttrString((PyObject*)a_type, "__name__");
