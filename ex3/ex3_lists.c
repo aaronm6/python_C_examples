@@ -35,13 +35,10 @@ static PyObject *meth_createtuple(PyObject *self, PyObject *Py_UNUSED(b)) {
 	PyObject *my_tuple;
 	my_tuple = PyTuple_New(3);
 	PyObject *a = PyLong_FromLong(1L);
-	printf("a's refcount after instantiation: %li\n", Py_REFCNT(a));
 	PyObject *c = PyUnicode_FromString("three");
 	PyTuple_SetItem(my_tuple, 0, a);
-	printf("a's refcount after list insertion: %li\n", Py_REFCNT(a));
 	PyTuple_SetItem(my_tuple, 1, PyLong_FromLong(2L));
 	PyTuple_SetItem(my_tuple, 2, c);
-	
 	return my_tuple;
 }
 
@@ -53,6 +50,7 @@ static PyObject *method_describe_args(PyObject *self, PyObject *args) {
 		Py_ssize_t args_size = PyTuple_Size(args);
 		printf("%zd positional arguments were given.\n", args_size);
 	}
+	fflush(stdout);
 	Py_RETURN_NONE;
 }
 
@@ -177,6 +175,10 @@ PyDoc_STRVAR(
 	"Create the following tuple and return it: (1, 2, 'three')");
 
 PyDoc_STRVAR(
+	describe_args__doc__,
+	"describe_args(*args)\n--\n\n"
+	"Accept a variable number of positional arguments and describe that tuple.");
+PyDoc_STRVAR(
 	list_sum__doc__,
 	"list_sum(x)\n--\n\n"
 	"Given a list, x, of exclusively python ints (C longs), calculate the sum\n"
@@ -205,6 +207,7 @@ PyDoc_STRVAR(
 static PyMethodDef ListMethods[] = {
     {"create_list", meth_createlist, METH_NOARGS, create_list__doc__},
     {"create_tuple", meth_createtuple, METH_NOARGS, create_tuple__doc__},
+    {"describe_args",method_describe_args, METH_VARARGS, describe_args__doc__},
     {"list_sum", meth_list_sum, METH_VARARGS, list_sum__doc__},
     {"list_sum_nc", meth_list_sum_nc, METH_VARARGS, list_sum_nc__doc__},
     {"list_x2", meth_list_double, METH_VARARGS, list_x2__doc__},
