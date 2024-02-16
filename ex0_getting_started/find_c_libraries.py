@@ -7,7 +7,7 @@ def main():
     print("\nIn order to compile the C functions correctly, add the following\n" + 
         "paths to the environment variable 'C_INCLUDE_PATH':\n")
     print(f"General python C api:\n{python_inc}\n")
-    print(f"Numpy C api:\n{numpy_inc}")
+    print(f"Numpy C api:\n{numpy_inc}\n")
 
 if __name__ == "__main__":
     main()
