@@ -25,37 +25,21 @@ char *get_dtype_name(int dtype_enum) {
 	}
 	return NULL;
 }
-
 /* ----------------------- </AUX> ----------------------- */
 
 
 /* ----------------- <MODULE FUNCTIONS> ----------------- */
-static PyObject *meth_describe_args(PyObject *self, PyObject *args) {
-	//printf("args + 0 = %p\n", args);
-	//printf("args + 1 = %p\n", args+1);
-	//printf("args + 2 = %p\n", args+2);
-	// } else if (Py_IS_TYPE(a, &PyTuple_Type)) {
-	if (Py_IS_TYPE(args, &PyTuple_Type)) {
-		printf("args is a PyTuple\n");
-		Py_ssize_t args_size = PyTuple_Size(args);
-		printf("Size of args is: %zd\n", args_size);
-	} else {
-		printf("args IS NOT a PyTuple\n");
-	}
-	
-	Py_RETURN_NONE;
-}
-
 static PyObject *meth_accept_array(PyObject *self, PyObject *args) {
 	PyArrayObject *input;
 	if (!PyArg_ParseTuple(args, "O&", PyArray_Converter, &input)) {
 		return NULL;
 	}
 	printf("Successful passing (and releasing) of an ndarray to function!\n");
+	fflush(stdout);
 	// PyArray_Converter increments the reference count of the input array
 	// to indicate that this function is using it.  We must therefore
-	// decrement this count at the end of the function or we will end up
-	// with a memory leak.
+	// decrement this count at the end of the function to indicate that we
+	// are finished, or we will end up with a memory leak.
 	Py_DECREF(input);
 	Py_RETURN_NONE;
 }
@@ -65,10 +49,12 @@ static PyObject *meth_accept_array_wrong(PyObject *self, PyObject *args) {
 	if (!PyArg_ParseTuple(args, "O&", PyArray_Converter, &input)) {
 		return NULL;
 	}
-	printf("Successful passing of an ndarray to function, but improper DECREF.\n");
-	printf("To see, run sys.getrefcount(..) on the array object passed to this\n");
-	printf("function before and after passing it to this function.\n");
-	printf("Then, try the same but using the 'accept_array' function\n");
+	printf("Successful passing (but not releasing) of an ndarray to function!\n");
+	fflush(stdout);
+	// Successful passing of an ndarray to function, but improper DECREF.
+	// To see, run sys.getrefcount(..) on the array object passed to this
+	// function before and after passing it to this function.\n
+	// Then, try the same but using the 'accept_array' function
 	// there SHOULD be a PyDECREF(input) line here
 	Py_RETURN_NONE;
 }
@@ -79,6 +65,7 @@ static PyObject *meth_print_dtypes(PyObject *self, PyObject *Py_UNUSED(b)) {
 		printf("%s = %i\n", type_names[i], numpy_types[i]);
 		i++;
 	}
+	fflush(stdout);
 	Py_RETURN_NONE;
 }
 
@@ -94,6 +81,7 @@ static PyObject *meth_get_dtype(PyObject *self, PyObject *args) {
 		if (tp == numpy_types[i]) {printf("%s\n", type_names[i]);}
 		i++;
 	}
+	fflush(stdout);
 	Py_DECREF(arr);
 	Py_RETURN_NONE;
 }
@@ -109,28 +97,12 @@ static PyObject *meth_describe_array(PyObject *self, PyObject *args) {
 	long tp = (long)PyArray_TYPE(arr);
 	int flags = PyArray_FLAGS(arr);
 	printf("    dtype: %s\n", get_dtype_name(tp));
-	/*
-	printf("    flags int = %i\n", flags);
-	if ((flags & NPY_ARRAY_C_CONTIGUOUS)>0) {
-		printf("    C-contiguous\n");
-	} else {
-		printf("    NOT C-contiguous\n");
-	}
-	printf("IS_C_CONTIGUOUS = %i\n", PyArray_IS_C_CONTIGUOUS(arr));
-	if ((flags & NPY_ARRAY_F_CONTIGUOUS)>0) {
-		printf("    F-contiguous\n");
-	} else {
-		printf("    NOT F-contiguous\n");
-	}
-	printf("IS_F_CONTIGUOUS = %i\n", PyArray_IS_F_CONTIGUOUS(arr));
-	*/
 	if (PyArray_IS_C_CONTIGUOUS(arr)) {
 		printf("    C-contiguous\n");
 	}
 	if (PyArray_IS_F_CONTIGUOUS(arr)) {
 		printf("    F-contiguous\n");
 	}
-	printf("    size of int is: %lu\n", sizeof(int));
 	printf("    Number of dimensions: %i\n", ndim);
 	printf("    Shape = (");
 	for (npy_intp i=0; i<ndim; i++) {
@@ -146,27 +118,16 @@ static PyObject *meth_describe_array(PyObject *self, PyObject *args) {
 	printf(")\n");
 	printf("    Data pointer:   %p\n", PyArray_DATA(arr));
 	printf("    Object pointer: %p\n", (void *)arr);
-	/*
-	printf("\n\n");
-	printf("NPY_ARRAY_C_CONTIGUOUS = %i\n",NPY_ARRAY_C_CONTIGUOUS);
-	printf("NPY_ARRAY_F_CONTIGUOUS = %i\n",NPY_ARRAY_F_CONTIGUOUS);
-	printf("NPY_ARRAY_OWNDATA = %i\n",NPY_ARRAY_OWNDATA);
-	printf("NPY_ARRAY_ALIGNED = %i\n",NPY_ARRAY_ALIGNED);
-	printf("NPY_ARRAY_WRITEABLE = %i\n",NPY_ARRAY_WRITEABLE);
-	printf("NPY_ARRAY_WRITEBACKIFCOPY = %i\n",NPY_ARRAY_WRITEBACKIFCOPY);
-	printf("NPY_ARRAY_BEHAVED = NPY_ARRAY_ALIGNED | NPY_ARRAY_WRITEABLE = %i\n",NPY_ARRAY_BEHAVED);
-	*/
+	fflush(stdout);
 	Py_DECREF(arr);
 	Py_RETURN_NONE;
 }
 
 static PyObject *meth_create_float_array(PyObject *self, PyObject *Py_UNUSED(b)) {
 	int ndim = 1; // 1-dimensional array
-	npy_intp dims[1]; // declare the array of dimensions
+	npy_intp dims[ndim]; // declare the array of dimensions
 	dims[0] = 3; // array of length 3
-	int ft = NPY_CORDER; // C-order vs F-order only has a difference for multi-dimensional arrays
-	int tp = NPY_DOUBLE; // data type of elements in the array
-	PyObject *nd_outarr = PyArray_EMPTY(ndim, dims, tp, ft); // define and declare array object
+	PyObject *nd_outarr = PyArray_EMPTY(ndim, dims, NPY_DOUBLE, NPY_CORDER); // define and declare array object
 	npy_double *outarr = (npy_double *)PyArray_DATA(nd_outarr); // pointer to first element in data
 	// Note the naming scheme used here: 'nd_outarr' is the python array object (which, by the way,
 	// does not include the data of the array).  'outarr' is the pointer to the actual data in the
@@ -176,9 +137,31 @@ static PyObject *meth_create_float_array(PyObject *self, PyObject *Py_UNUSED(b))
 	outarr[2] = 1.41421;
 	// The method of indexing the data array used here is not the 
 	// 'proper' way, and can be problematic.  Here it is fine, but
-	// later the technique of using the 'strides' will be explained.
+	// later a safer method will be used.
 	return nd_outarr;
 }
+
+static PyObject *meth_create_float_array2(PyObject *self, PyObject *Py_UNUSED(b)) {
+	int ndim = 1; // 1-dimensional array
+	npy_intp dims[ndim]; // declare the array of dimensions
+	dims[0] = 3; // array of length 3
+	PyArray_Descr *sc_type = PyArray_DescrNewFromType(NPY_FLOAT64);
+	PyObject *nd_outarr = PyArray_Empty(ndim, dims, sc_type, NPY_CORDER);
+	// Note the different method here of declarying the empty array ('EMPTY' vs 'Empty',
+	// which require different methods).  Both are acceptable.
+	npy_float64 *el;
+	// PyArray__GETPTR1 returns a pointer to a specified element in the 1d array.  It
+	// is safer than dereferencing the data pointer directly, as in the above function.
+	el = (npy_float64 *)PyArray_GETPTR1(nd_outarr, 0);
+	*el = 3.14159;
+	el = (npy_float64 *)PyArray_GETPTR1(nd_outarr, 1);
+	*el = 2.71828;
+	el = (npy_float64 *)PyArray_GETPTR1(nd_outarr, 2);
+	*el = 1.41421;
+	
+	return nd_outarr;
+}
+
 
 static PyObject *meth_create_bool_array(PyObject *self, PyObject *Py_UNUSED(b)) {
 	// C has no native bool type, but python does.
@@ -761,13 +744,13 @@ PyDoc_STRVAR(
 
 
 static PyMethodDef ArrayMethods[] = {
-	{"describe_args", meth_describe_args, METH_VARARGS, "Describe the args"},
 	{"accept_array", meth_accept_array, METH_VARARGS, accept_array__doc__},
 	{"accept_array_wrong", meth_accept_array_wrong, METH_VARARGS, accept_array_wrong__doc__},
 	{"print_dtypes", meth_print_dtypes, METH_NOARGS, print_dtypes__doc__},
 	{"get_dtype", meth_get_dtype, METH_VARARGS, get_dtype__doc__},
 	{"describe_array",meth_describe_array,METH_VARARGS, describe_array__doc__},
 	{"create_float_array",meth_create_float_array,METH_NOARGS,create_float_array__doc__},
+	{"create_float_array2",meth_create_float_array2,METH_NOARGS,create_float_array__doc__},
 	{"create_bool_array",meth_create_bool_array,METH_NOARGS,create_bool_array__doc__},
 	{"create_square_array",meth_create_square_array,METH_VARARGS,create_square_array__doc__},
 	{"copy_1d_int8_array_wrong",meth_copy_1d_int8_array_wrong,METH_VARARGS,copy_1d_int8_array_wrong__doc__},
