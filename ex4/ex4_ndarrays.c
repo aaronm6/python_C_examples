@@ -676,7 +676,14 @@ PyDoc_STRVAR(
 	create_float_array__doc__,
 	"create_float_array()\n--\n\n"
 	"No input.  Create a numpy array of dtype double (i.e. numpy type float64\n"
-	"(on most platforms) and return it.");
+	"(on most platforms) and return it. The internal C code does not do it in\n"
+	"the 'proper' way, but shown here as a demonstration.");
+PyDoc_STRVAR(
+	create_float_array2__doc__,
+	"create_float_array2()\n--\n\n"
+	"No input.  Create a numpy array of dtype double (i.e. numpy type float64\n"
+	"(on most platforms) and return it. Here the internal C code accesses the\n"
+	"array elements in a way that is safer than that used in 'create_float_array'");
 PyDoc_STRVAR(
 	create_bool_array__doc__,
 	"create_bool_array()\n--\n\n"
@@ -750,7 +757,7 @@ static PyMethodDef ArrayMethods[] = {
 	{"get_dtype", meth_get_dtype, METH_VARARGS, get_dtype__doc__},
 	{"describe_array",meth_describe_array,METH_VARARGS, describe_array__doc__},
 	{"create_float_array",meth_create_float_array,METH_NOARGS,create_float_array__doc__},
-	{"create_float_array2",meth_create_float_array2,METH_NOARGS,create_float_array__doc__},
+	{"create_float_array2",meth_create_float_array2,METH_NOARGS,create_float_array2__doc__},
 	{"create_bool_array",meth_create_bool_array,METH_NOARGS,create_bool_array__doc__},
 	{"create_square_array",meth_create_square_array,METH_VARARGS,create_square_array__doc__},
 	{"copy_1d_int8_array_wrong",meth_copy_1d_int8_array_wrong,METH_VARARGS,copy_1d_int8_array_wrong__doc__},
