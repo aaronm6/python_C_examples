@@ -20,7 +20,7 @@ Additionally, there are two functions which take no inputs but create a (1) list
 */
 
 /* ----------------- <MODULE FUNCTIONS> ----------------- */
-static PyObject *meth_createlist(PyObject *self, PyObject *Py_UNUSED(b)) {
+static PyObject *meth_createlist(PyObject *self, PyObject *Py_UNUSED(args)) {
 	// Create the list: [1, 2, 'three']
 	PyObject *my_list;
 	my_list = PyList_New(3);
@@ -30,7 +30,7 @@ static PyObject *meth_createlist(PyObject *self, PyObject *Py_UNUSED(b)) {
 	return my_list;
 }
 
-static PyObject *meth_createtuple(PyObject *self, PyObject *Py_UNUSED(b)) {
+static PyObject *meth_createtuple(PyObject *self, PyObject *Py_UNUSED(args)) {
 	// Create the tuple: (1, 2, 'three')
 	PyObject *my_tuple;
 	my_tuple = PyTuple_New(3);
@@ -72,7 +72,7 @@ static PyObject *meth_list_sum(PyObject *self, PyObject *args) {
 	if (numElements < 0) {
 		PyErr_SetString(PyExc_ValueError, "List must not have negative length.");
 	}
-	long c = 0;  /* c will hold the sum */
+	long c = 0L;  /* c will hold the sum */
 	
 	for (int i=0; i<numElements; i++) {
 		elobj = PyList_GetItem(listobj, i);
@@ -96,7 +96,7 @@ static PyObject *meth_list_sum_nc(PyObject *self, PyObject *args) {
         return NULL;
     }
 	numElements = PyList_Size(listobj);
-	long c=0;
+	long c = 0L;
 	PyObject * py_c = PyLong_FromLong(c);
 	for (int i=0; i<numElements; i++) {
 		elobj = PyList_GetItem(listobj, i);
