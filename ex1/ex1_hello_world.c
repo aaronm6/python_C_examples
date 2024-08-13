@@ -2,7 +2,7 @@
 #include <Python.h>
 
 // Define the functions in the module
-static PyObject *meth_helloworld(PyObject *self, PyObject *Py_UNUSED(b)) {
+static PyObject *meth_helloworld(PyObject *self, PyObject *Py_UNUSED(args)) {
 	// Print the message with the native C printf
 	printf("Hello World!\n");
 	
