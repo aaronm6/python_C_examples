@@ -2,7 +2,7 @@
 #include <Python.h>
 
 // Define module functions
-static PyObject *method_return_long(PyObject *self, PyObject *Py_UNUSED(b)) {
+static PyObject *method_return_long(PyObject *self, PyObject *Py_UNUSED(args)) {
 	// Define the C-type variable. The 'L' after the number just indicates it is a long
 	long n = 262144L;
 	
@@ -14,11 +14,11 @@ static PyObject *method_return_long(PyObject *self, PyObject *Py_UNUSED(b)) {
 }
 
 static PyObject *method_accept_1_int_v1(PyObject *self, PyObject *args) {
-	PyObject *a;
 	/* PyArg_ParseTuple unpacks the input "args" a bit.  "O", as the 2nd argument 
 	   to PyArgParseTuple, tells it what to do with the input args, in this case, 
 	   treat it as a python object (NOT a C object).  Later, the object is 
 	   converted to a C long type, which can be manipulated in C */
+	PyObject *a;
 	if (!PyArg_ParseTuple(args, "O", &a)) {
 		return NULL;
 	}
@@ -37,12 +37,12 @@ static PyObject *method_accept_1_int_v1(PyObject *self, PyObject *args) {
 }
 
 static PyObject *method_accept_1_int_v2(PyObject *self, PyObject *args) {
-	long n;
 	/* PyArg_ParseTuple unpacks the input "args" a bit.  "l", as the 2nd argument
 	   to PyArgParseTuple, tells it what to do with the input args, in this case, 
 	   convert it directly into a C object (declared ahead of time).  Because we 
 	   specify "l", this function will barf if the given variable is not a long 
 	   int (python int).*/
+	long n;
 	if (!PyArg_ParseTuple(args, "l", &n)) {
 		return NULL;
 	}
