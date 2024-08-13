@@ -12,16 +12,16 @@ In order to compile the C functions correctly, add the following
 paths to the environment variable 'C_INCLUDE_PATH':
 
 General python C api:
-/opt/local/Library/Frameworks/Python.framework/Versions/3.10/include/python3.10
+/opt/anaconda3/include/python3.12
 
 Numpy C api:
-/opt/local/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/numpy/core/include
+/opt/anaconda3/lib/python3.12/site-packages/numpy/core/include
 ```
 
 One would then go into the shell's startup script (e.g. `.bashrc`) and add the following lines:
 ```
-export C_INCLUDE_PATH=$C_INCLUDE_PATH:/opt/local/Library/Frameworks/Python.framework/Versions/3.10/include/python3.10
-export C_INCLUDE_PATH=$C_INCLUDE_PATH:/opt/local/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages/numpy/core/include
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:/opt/anaconda3/include/python3.12
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:/opt/anaconda3/lib/python3.12/site-packages/numpy/core/include
 ```
 
 In principle, since `gcc` is available on both Linux and MacOS, one command should suffice for compiling on both systems.  Unfortunately, I have not found that to be the case, so I show below how to compile on both systems.  Imagine we have written our C extension module in a file called `my_module.c`.  To compile this to `my_module.so`, one uses:
